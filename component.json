@@ -1,0 +1,16 @@
+{
+    "About this file":"Bower package",
+    "name":"platformaer",
+    "version":"1.0.0",
+    "main":"./lib",
+    "dependencies":{
+        "Node":"last",
+        "graphics":"last",
+        "jquery":"last",
+        "underscore":"last",
+        "require":"last",
+        "Vector2D":"last",
+        "decorate":"last",
+        "mixin":"last"
+    }
+}

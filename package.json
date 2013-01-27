@@ -1,0 +1,17 @@
+{
+  "name": "Platformer game",
+  "version": "0.0.1",
+  "author": "Vitalii [Nayjest] Stepanenko <gmail@vitaliy.in>",
+  "scripts":{
+    "build":"cake build"
+  },
+  "devDependencies": {
+    "coffee-script":"*"
+
+  },
+  "repository": {
+        "type": "git",
+        "url": ""
+  },
+  "license": "MIT"
+}
