@@ -22,6 +22,7 @@ require [
     'resources',
     'settings',
     'components/graphics/lib/layers/dom/DomRectLayer',
+    'components/graphics/lib/layers/canvas/CanvasRectLayer',
     'GameObjectCollection',
     'components/underscore/underscore',
 ], (
@@ -48,8 +49,25 @@ require [
   resources,
   settings,
   DomRectLayer,
+  CanvasRectLayer,
+
   GameObjectCollection
 )->
+  LayerClass = CanvasRectLayer
+  #LayerClass = DomRectLayer
+  viewportConfig =
+    size:
+      x:800
+      y: 600
+    css:
+      border: '3px solid black'
+      width: '800px'
+      height:'600px'
+  viewport = new LayerClass.prototype.viewportClass viewportConfig
+  staticViewport = new LayerClass.prototype.viewportClass viewportConfig
+  viewport.$el.css 'z-index', 999
+  viewport.redraw()
+  staticViewport.redraw()
 
   kills = 0
   deaths = 0
@@ -58,12 +76,15 @@ require [
   Gravity.g.setValues(0, settings.g)
   keyboard.init()
 
-  mapLayer = new DomRectLayer
+  mapLayer = new LayerClass
     color:'#EEEEEE'
+    viewport: staticViewport
+    parent: staticViewport
 
   objDefaults =
     size:settings.cellSize
     cellSize: settings.cellSize
+    borderWidth:0
     css:
       outline:'none'
   wallDefaults = _.defaults {
@@ -80,7 +101,7 @@ require [
       .substract(map.size.clone().divideScalar(2))
       .addScalar(0.5)
       .multiply(settings.cellSize)
-    new DomRectLayer cfg
+    new LayerClass cfg
 
   mapLayer.size.set map.size.clone().multiply settings.cellSize
   mapLayer.redraw()
@@ -90,7 +111,7 @@ require [
   }, objDefaults
 
   Layer.defaults =
-    layerClass:DomRectLayer
+    layerClass:LayerClass
     layerConfig:objDefaults
 
   enemies = new GameObjectCollection()
@@ -104,7 +125,8 @@ require [
       Gravity
       SlopeOnWalk,
       Size,
-      CollisionCheck
+      CollisionCheck,
+      Layer
     ],
     size:
       x: 20
@@ -143,8 +165,9 @@ require [
       size:
         x:15
         y:15
-      layer: new  DomRectLayer _.defaults {
+      layer: new  LayerClass _.defaults {
         color:'green'
+        borderWidth:0
         size:
           x:15
           y:15
@@ -178,11 +201,10 @@ require [
       pos:@pos
       speed: direction
       size:{x:1,y:1}
-      layer: new  DomRectLayer
+      layer: new  LayerClass
         color:'orange'
+        borderWidth:0
         size:{x:10,y:2}
-        css:
-          outline:'none'
     bullet.speed.multiplyScalar(20)
     bullet.speed.y = (Math.random()-0.5)*2
     bullet.config.checkCollision =
@@ -196,15 +218,13 @@ require [
     bullet.use Size
 
 
-
+  enemySpawnPoint = map.size.clone().multiply({x:0,y:-0.5}).multiply(settings.cellSize)
   createEnemy= ->
-    enemySpawnPoint = map.size.clone().multiply({x:0,y:-0.5}).multiply(settings.cellSize)
-    console.log enemySpawnPoint
 
     unit = new DynamicGameObject _.extend {
       pos:enemySpawnPoint
       walkSpeed:0.5+Math.random()*3
-      layer: new  DomRectLayer _.extend {color:'red'}, objDefaults
+      layer: new  LayerClass _.extend {color:'red'}, objDefaults
       behaviors: [
         PlatformerWalkerAI,
         PlatformerJump,
@@ -222,7 +242,9 @@ require [
   mapLayer.redraw()
   intervalTime = 1000 / 60
   gameLoop = ->
+
     return if paused
+    viewport.clear()
     for unit in DynamicGameObject.collection
       if unit
         if (Math.abs(unit.pos.y) > mapLayer.size.y/2) or (Math.abs(unit.pos.x) > mapLayer.size.x/2)
@@ -234,19 +256,17 @@ require [
         unit.layer.redraw()
 
 
-
-
-
     # mapLayer.redraw()
   setInterval gameLoop, intervalTime
   createEnemy()
   createBox()
   createEnemy()
   setInterval ()->
+
     if Math.random()< 0.44
       createEnemy()
   , 500
 
-  window.objects = DynamicGameObject.collection
+  window.obj = DynamicGameObject.collection
   window.enemies = enemies
 
