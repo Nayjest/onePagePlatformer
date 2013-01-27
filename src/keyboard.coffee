@@ -18,4 +18,6 @@ define [], ()->
   k.keyNames[39] = "right"
   k.keyNames[40] = "down"
   k.keyNames[13] = "enter"
+  k.keyNames[17] = "ctrl"
+
   k

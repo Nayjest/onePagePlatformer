@@ -1,5 +1,6 @@
 require [
     'components/require/require',
+    'components/decorate/decorate',
     'components/Vector2d/Vector2d',
     'components/mixin/lib/mixin',
     'keyboard',
@@ -25,6 +26,7 @@ require [
     'components/underscore/underscore',
 ], (
   require,
+  decorate,
   Vector2d
   mixin
   keyboard,
@@ -49,6 +51,11 @@ require [
   GameObjectCollection
 )->
 
+  kills = 0
+  deaths = 0
+  points = 0
+  paused = false
+  Gravity.g.setValues(0, settings.g)
   keyboard.init()
 
   mapLayer = new DomRectLayer
@@ -87,7 +94,7 @@ require [
     layerConfig:objDefaults
 
   enemies = new GameObjectCollection()
-  player = new DynamicGameObject _.extend {
+  player = new DynamicGameObject _.defaults {
     behaviors: [
       PlatformerKeyboardController
       PlatformerWalker,
@@ -99,6 +106,9 @@ require [
       Size,
       CollisionCheck
     ],
+    size:
+      x: 20
+      y: 20
     checkCollision:
       objects: enemies
       handler: (obj)->
@@ -106,7 +116,62 @@ require [
   },unitDefaults
   player.type = 'player'
   player.die = ->
-    player.pos.setValues 0, 0
+    $('#deathsVal').html deaths
+    $('#gameover').show('slow')
+    paused = true
+    setTimeout (->
+      points=0
+      $('#pointsVal').html points
+      deaths++
+      $('#gameover').hide('slow')
+      for e in enemies.slice(0)
+        e.destructor()
+      player.pos.setValues 0, 0
+      paused = false
+      createEnemy()
+    ),1000
+
+  createBox = ->
+
+    x = ~~(Math.random()*map.size.x)
+    y = ~~(Math.random()*map.size.y)
+
+    x -= map.size.x/2
+    y -= map.size.x/2
+    box = new DynamicGameObject _.defaults {
+      pos:new Vector2d(x,y).multiply(settings.cellSize)
+      size:
+        x:15
+        y:15
+      layer: new  DomRectLayer _.defaults {
+        color:'green'
+        size:
+          x:15
+          y:15
+        css:
+          zIndex:9999
+          outline:'none'
+      }, objDefaults
+      behaviors: [
+        Gravity,
+        Layer,
+        Size,
+        Moving,
+        WallCollisions,
+        #SlopeOnWalk
+      ]
+    },unitDefaults
+    box.config.checkCollision =
+      objects: [player]
+      handler: (obj)->
+        points++
+        $('#pointsVal').html points
+        @destructor()
+    box.use CollisionCheck
+    decorate box, 'destructor', ->
+      createBox()
+    box
+  window.createBox = createBox
 
   player.createBullet = (pos, direction)->
     bullet = new DynamicGameObject
@@ -123,6 +188,8 @@ require [
     bullet.config.checkCollision =
       objects: enemies
       handler: (obj)->
+        kills++;
+        $('#killsVal').html kills
         obj.destructor()
         @destructor()
     bullet.use CollisionCheck
@@ -136,8 +203,8 @@ require [
 
     unit = new DynamicGameObject _.extend {
       pos:enemySpawnPoint
-      walkSpeed:1+Math.random()*4
-      layer: new  DomRectLayer _.extend {color:'#ff00ee'}, objDefaults
+      walkSpeed:0.5+Math.random()*3
+      layer: new  DomRectLayer _.extend {color:'red'}, objDefaults
       behaviors: [
         PlatformerWalkerAI,
         PlatformerJump,
@@ -155,6 +222,7 @@ require [
   mapLayer.redraw()
   intervalTime = 1000 / 60
   gameLoop = ->
+    return if paused
     for unit in DynamicGameObject.collection
       if unit
         if (Math.abs(unit.pos.y) > mapLayer.size.y/2) or (Math.abs(unit.pos.x) > mapLayer.size.x/2)
@@ -172,10 +240,10 @@ require [
     # mapLayer.redraw()
   setInterval gameLoop, intervalTime
   createEnemy()
-  createEnemy()
+  createBox()
   createEnemy()
   setInterval ()->
-    if Math.random()< 0.39
+    if Math.random()< 0.44
       createEnemy()
   , 500
 

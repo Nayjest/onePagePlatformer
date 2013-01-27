@@ -11,5 +11,5 @@ define ['keyboard'], (keyboard)->
         @model.walkLeft()
       if keyboard.right
         @model.walkRight()
-      if keyboard.space
+      if keyboard.ctrl
         @model.shoot()

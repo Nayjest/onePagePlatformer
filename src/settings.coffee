@@ -1,7 +1,7 @@
 define [], ()->
   cellSize:
-    x:32
-    y:32
+    x:28
+    y:28
   # gravitation g
-  g:9
+  g:0.69
 
